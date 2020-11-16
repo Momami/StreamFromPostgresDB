@@ -4,9 +4,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
-import akka.http.scaladsl.server.Directives.{complete, get, path, pathPrefix, respondWithHeaders}
+import akka.http.scaladsl.server.Directives.{complete, get, pathPrefix, respondWithHeaders}
 import doobie.util.ExecutionContexts
-//import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Source}
 import akka.util.ByteString
 import cats.effect._
@@ -21,7 +20,7 @@ object Main extends App {
   implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", // driver classname
-    "jdbc:postgresql:world", // connect URL (driver-specific)
+    "jdbc:postgresql://host.docker.internal:5432/world", // connect URL (driver-specific)
     "postgres", // user
     "" // password
   )
@@ -53,7 +52,8 @@ object Main extends App {
 
   val hobbiesFlow: Flow[Applicant, List[String], NotUsed] = Flow[Applicant].map { applicant =>
     getApplicantWithHobbies(applicant.id).unsafeRunSync() match {
-      case x: List[Hobbies] => applicant.parse :+ x.map(_.hobby).mkString(",")
+      case x: List[Hobbies] =>
+        applicant.parse :+ x.map(_.hobby).mkString(",")
       case _ => applicant.parse()
     }
   }
@@ -64,7 +64,6 @@ object Main extends App {
         .via(hobbiesFlow)
         .map(x => ByteString(x.mkString(",") + "\n"))
       val headers = List(RawHeader("Content-Disposition", s"attachment; filename=applicant.csv"))
-
       respondWithHeaders(headers) {
         complete(HttpEntity(ContentTypes.`text/csv(UTF-8)`, source))
       }
@@ -73,12 +72,12 @@ object Main extends App {
 
   implicit lazy val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "my-system")
   implicit val executionContext: ExecutionContextExecutor = system.executionContext
-  val bindingFuture = Http().newServerAt("localhost", 8080).bind(route)
+  val bindingFuture = Http().newServerAt("0.0.0.0", 8080).bind(route)
 
   println(s"Server online at http://localhost:8080/applicant-download\nPress RETURN to stop...")
-  StdIn.readLine()
-  bindingFuture
-    .flatMap(_.unbind())
-    .onComplete(_ => system.terminate())
+//  StdIn.readLine()
+//  bindingFuture
+//    .flatMap(_.unbind())
+//    .onComplete(_ => system.terminate())
 
 }
