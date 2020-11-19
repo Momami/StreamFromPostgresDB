@@ -1,0 +1,24 @@
+version: "2"
+services:
+  applicant-info:
+    container_name: applicant-info
+    build: .
+    ports:
+      - "8080:8080"
+    links:
+      - postgres:postgres
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres
+    restart: always
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_USER=postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./script/init.sql:/docker-entrypoint-initdb.d/init.sql
+volumes:
+  pgdata:

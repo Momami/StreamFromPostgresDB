@@ -14,13 +14,12 @@ import doobie.implicits._
 import streamz.converter
 
 import scala.concurrent.ExecutionContextExecutor
-import scala.io.StdIn
 
 object Main extends App {
   implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", // driver classname
-    "jdbc:postgresql://host.docker.internal:5432/world", // connect URL (driver-specific)
+    "jdbc:postgresql://postgres:5432/world", // connect URL (driver-specific)
     "postgres", // user
     "" // password
   )
@@ -74,10 +73,5 @@ object Main extends App {
   implicit val executionContext: ExecutionContextExecutor = system.executionContext
   val bindingFuture = Http().newServerAt("0.0.0.0", 8080).bind(route)
 
-  println(s"Server online at http://localhost:8080/applicant-download\nPress RETURN to stop...")
-//  StdIn.readLine()
-//  bindingFuture
-//    .flatMap(_.unbind())
-//    .onComplete(_ => system.terminate())
-
+  println(s"Server online at http://localhost:8080/applicant-download")
 }
