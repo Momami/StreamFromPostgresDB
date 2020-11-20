@@ -16,22 +16,13 @@ import streamz.converter
 import scala.concurrent.ExecutionContextExecutor
 
 object Main extends App {
-  implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+  implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContexts.synchronous)
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", // driver classname
-    "jdbc:postgresql://postgres:5432/world", // connect URL (driver-specific)
-    "postgres", // user
-    "" // password
+    "org.postgresql.Driver",
+    "jdbc:postgresql://postgres:5432/world",
+    "postgres",
+    ""
   )
-
-  def getApplicantList: IO[List[Applicant]] = {
-    sql"""select * from applicant
-     """.query[Applicant]
-      .stream
-      .compile
-      .toList
-      .transact(xa)
-  }
 
   def getApplicants: fs2.Stream[IO, Applicant] = {
     sql"""select * from
